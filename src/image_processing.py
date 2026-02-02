@@ -5,36 +5,6 @@ Image processing functions for PNN analysis.
 import numpy as np
 
 
-def load_image(filepath):
-    """
-    Load an image file for analysis.
-    
-    Parameters
-    ----------
-    filepath : str
-        Path to the image file
-        
-    Returns
-    -------
-    image : numpy.ndarray
-        Loaded image as numpy array
-        
-    Examples
-    --------
-    >>> image = load_image('data/raw/sample_image.tif')
-    """
-    try:
-        from skimage import io
-        image = io.imread(filepath)
-        return image
-    except ImportError:
-        print("Warning: scikit-image not installed. Install with: pip install scikit-image")
-        return None
-    except Exception as e:
-        print(f"Error loading image: {e}")
-        return None
-
-
 def preprocess_image(image, remove_noise=True, normalize=True):
     """
     Preprocess image for analysis.
