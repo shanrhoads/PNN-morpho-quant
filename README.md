@@ -18,10 +18,6 @@ PNN-morpho-quant/
 │   └── utils.py                 # Utility functions (I/O, batch processing)
 ├── notebooks/                    # Jupyter notebooks
 │   └── PNN_Analysis_Pipeline.ipynb  # Main analysis pipeline notebook
-├── data/                         # Data directory
-│   ├── raw/                     # Raw STED images
-│   └── processed/               # Processed data
-├── results/                      # Analysis results and outputs
 ├── requirements.txt             # Python dependencies
 ├── .gitignore                   # Git ignore file
 ├── LICENSE                      # MIT License
