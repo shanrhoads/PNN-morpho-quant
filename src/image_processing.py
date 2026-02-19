@@ -1,93 +1,67 @@
-"""
-Image processing functions for PNN analysis.
-"""
-
+import skimage
+import pandas as pd
 import numpy as np
 
 
-def preprocess_image(image, remove_noise=True, normalize=True):
-    """
-    Preprocess image for analysis.
-    
-    Parameters
-    ----------
-    image : numpy.ndarray
-        Input image
-    remove_noise : bool, optional
-        Apply noise removal filter (default: True)
-    normalize : bool, optional
-        Normalize image intensities (default: True)
-        
-    Returns
-    -------
-    processed_image : numpy.ndarray
-        Preprocessed image
-        
-    Examples
-    --------
-    >>> processed = preprocess_image(raw_image, remove_noise=True, normalize=True)
-    """
-    if image is None:
-        return None
-    
-    processed = image.copy()
-    
-    if remove_noise:
-        try:
-            from skimage import filters
-            processed = filters.gaussian(processed, sigma=1)
-        except ImportError:
-            print("Warning: scikit-image not installed for noise removal")
-    
-    if normalize:
-        processed = processed - processed.min()
-        max_val = processed.max()
-        if max_val > 0:
-            processed = processed / max_val
-    
-    return processed
 
+# function to create skeleton objects from instance segmentation while maintaining the same labels as the instance segmentation
+def skeletonize_plus(segmentation: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    ''' A function that generates punctate objects for the round organelle objects that lack a skeleton.
 
-def segment_pnn(image, threshold_method='otsu'):
-    """
-    Segment perineuronal nets from preprocessed image.
+    As of 7/7/24 the original `skeletonize()` function from `skimage` labels the voxels of the skeleton with the same label,
+    however the label serves no purpose to us as of now. 
+    The purpose of this function is to: 
+
+    1) Establish punctate objects in the center of organelle objects that for some reason lack a skeleton object (if necessary)
+    * these objects are found to be round/spherical in every case this happens, so a punctate is appropriate
+    2) Return a skeleton with float labels (due to skan requiring this) corresponding to its location in the original segmentation 
+    3) Return a boolean skeleton for input in computation
+
+    Parameters:
+    -----------
+    segmentation : np.ndarray
+        A 3D numpy array containing the instance segmentation of the organelle objects.
     
-    Parameters
-    ----------
-    image : numpy.ndarray
-        Preprocessed image
-    threshold_method : str, optional
-        Thresholding method ('otsu', 'adaptive', or 'manual')
-        Default: 'otsu'
-        
-    Returns
-    -------
-    mask : numpy.ndarray
-        Binary mask of segmented PNNs
-        
-    Examples
-    --------
-    >>> mask = segment_pnn(processed_image, threshold_method='otsu')
-    """
-    if image is None:
-        return None
+    Returns:
+    -----------
+    lab_skel : np.ndarray
+        A 3D numpy array containing the skeleton output where each skeleton object is labeled with the same label as the organelle object it belongs to.
+    skeleton : np.ndarray
+        A 3D boolean numpy array containing the boolean skeleton of the organelle objects.
+    '''
+
+    # This is the raw organelle skeleton, some fixing and relabeling has to be done before we can use the skeleton for computation
+    skeleton = skimage.morphology.skeletonize(segmentation.astype(bool)).astype(bool)
+
+    # All of the organelle object labels
+    all_lab = set(pd.unique(segmentation.ravel()))
+
+    # Applying the segmentation labels to the skeleton
+    lab_skel = (skeleton * segmentation).astype(int)
+
+    # Labels present in the skeleton
+    skel_lab = set(pd.unique(lab_skel.ravel()))
+
+    # Checker to see if there are any objects without a skeleton
+    if all_lab == skel_lab:
+        return lab_skel.astype(int), skeleton
     
-    try:
-        from skimage import filters
+    else:
+        # gets a list of the missing labels
+        mis_lab = all_lab - skel_lab
+
+        for label in mis_lab:
+            # list of coordinates of the object's voxels
+            coord_list = np.nonzero(segmentation == label)
+
+            # The coordinate closest to the middle of the object (due to rounding)
+            av_coord = np.round(np.mean(coord_list,axis = 1)).astype(int)
+
+            #checker and result
+            if segmentation[tuple(av_coord)] == label:
+                lab_skel[tuple(av_coord)] = label
+            else:
+                print("Apperently the centermost point is not in the object???? :(")
+                break
         
-        if threshold_method == 'otsu':
-            threshold = filters.threshold_otsu(image)
-            mask = image > threshold
-        elif threshold_method == 'adaptive':
-            # Placeholder for adaptive thresholding
-            threshold = filters.threshold_otsu(image)
-            mask = image > threshold
-        else:
-            # Default to Otsu if method not recognized
-            threshold = filters.threshold_otsu(image)
-            mask = image > threshold
-            
-        return mask.astype(np.uint8)
-    except ImportError:
-        print("Warning: scikit-image not installed for segmentation")
-        return None
+        return lab_skel.astype(int), skeleton
