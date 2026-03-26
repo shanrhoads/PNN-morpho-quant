@@ -253,7 +253,7 @@ def batch_PNN_seg_skel(file_path: str,
                 local_threshold = skimage.filters.threshold_local(src_seg_8bit, block_size=local_threshold_size, method='gaussian', param=local_gaussian_sigma)
             else:
                 raise ValueError(f"Unrecognized local threshold method: {local_threshold_method}")
-            src_seg = src_seg_8bit > local_threshold*local_threshold_adjust
+            src_seg = src_seg_8bit >= local_threshold*local_threshold_adjust
 
         # refine segmentation
         if obj_method == 'slices' or hole_method == 'slices':
