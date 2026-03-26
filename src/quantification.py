@@ -1,5 +1,5 @@
 import skimage
-from typing import Union
+from typing import Union, List
 from pathlib import Path
 import numpy as np
 import time
