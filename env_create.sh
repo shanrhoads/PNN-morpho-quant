@@ -1,3 +1,7 @@
+# if using longleaf start here
+module load anaconda
+
+# if on a personal computer, make sure you have anaconda installed and start here
 conda create -n PNN-morpho python=3.12  # 3.13
 conda activate PNN-morpho
 
