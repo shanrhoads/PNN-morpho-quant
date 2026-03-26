@@ -162,13 +162,13 @@ def batch_PNN_quant(file_out_prefix: str,
     """
     # confirm file paths and files exist
     if not Path.exists(Path(raw_file_path)):
-        raise FileExistsError("Input file path does not exist.")
+        raise FileNotFoundError("Input file path does not exist.")
     elif not Path.exists(Path(seg_skel_path)):
-        raise FileExistsError("Segmentation/skeleton file path does not exist.")
+        raise FileNotFoundError("Segmentation/skeleton file path does not exist.")
     else:
         file_list = sorted(Path(raw_file_path).glob(f"*{raw_file_type}"))
         if len(file_list) == 0:
-            raise FileExistsError(f"Input file path does not have any {raw_file_type} files.")
+            raise ValueError(f"Input file path does not have any {raw_file_type} files.")
 
     
     if not Path.exists(Path(quant_out_path)):
