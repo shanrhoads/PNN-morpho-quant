@@ -24,11 +24,13 @@ def surface_area_from_props(labels, props, scale: Union[tuple,None]=None):
         volume = volume == lab
         if scale is None:
             scale=(1.0,) * labels.ndim
+        # Cast boolean mask to float and use standard isosurface level for binary data
+        volume = volume.astype(float)
         verts, faces, _normals, _values = skimage.measure.marching_cubes(
             volume,
             method="lewiner",
             spacing=scale,
-            level=0,
+            level=0.5,
         )
         surface_areas[index] = skimage.measure.mesh_surface_area(verts, faces)
 
