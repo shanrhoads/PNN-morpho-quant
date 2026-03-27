@@ -160,8 +160,9 @@ def batch_PNN_seg_skel(file_path: str,
         elif len(file_list) > 0:
             print(f"Found {len(file_list)} {file_type} files in {file_path}.")
         
-    if not Path.exists(Path(out_path)):
-        Path.mkdir(Path(out_path))
+    out_dir = Path(out_path)
+    if not out_dir.exists():
+        out_dir.mkdir(parents=True, exist_ok=True)
         print(f"Output file path not found. Creating: {out_path}")
 
     # keeping track of processing time
