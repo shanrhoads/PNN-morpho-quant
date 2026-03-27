@@ -194,9 +194,11 @@ def batch_PNN_seg_skel(file_path: str,
             src_seg = skimage.filters.gaussian(src_seg, sigma=gaus_sigma)
         if med_size != 0:
             # TODO: make the median filter footprint adjustable based on the image (XY images won't work here)
-            fp = skimage.morphology.footprint_rectangle((round(med_size*(voxel_size_ZYX[0]/float(np.max(voxel_size_ZYX)))), 
-                                                        round(med_size*(voxel_size_ZYX[1]/float(np.max(voxel_size_ZYX)))), 
-                                                        round(med_size*(voxel_size_ZYX[2]/float(np.max(voxel_size_ZYX))))))
+            # Ensure each footprint dimension is at least 1 voxel to avoid zero-sized footprints
+            z_dim = max(1, int(round(med_size * (voxel_size_ZYX[0] / float(np.max(voxel_size_ZYX))))))
+            y_dim = max(1, int(round(med_size * (voxel_size_ZYX[1] / float(np.max(voxel_size_ZYX))))))
+            x_dim = max(1, int(round(med_size * (voxel_size_ZYX[2] / float(np.max(voxel_size_ZYX))))))
+            fp = skimage.morphology.footprint_rectangle((z_dim, y_dim, x_dim))
             src_seg = skimage.filters.median(src_seg, footprint=fp)
 
         # segment
