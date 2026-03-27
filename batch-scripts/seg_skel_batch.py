@@ -1,3 +1,37 @@
+#### USER SPECIFIED INPUTS ####
+# specify the location of the PNN-morpho-quant repo
+repo_path = '/users/s/r/srhoads/PNN-morpho-quant'
+
+# inputs for batch_PNN_seg_skel function
+file_path="/users/s/r/srhoads/PNN-morpho_Hayli-pilot-data/Male/Pair 5/3D STED/WT"
+file_type=".tif"
+out_path="/users/s/r/srhoads/PNN-morpho_Hayli-pilot-data/Male/Pair 5/3D STED/WT_seg-skel_20260325-py-test"
+gaus_sigma=2
+med_size=8
+manual_threshold_cutoff=0.045
+auto_threshold_method=None
+auto_threshold_adjust=None
+auto_multiotsu_middle_to=None
+local_threshold_method=None
+local_threshold_adjust=None
+local_threshold_size=None
+local_gaussian_sigma=None
+obj_min_diameter=10
+obj_method='3D'
+hole_min_diameter=0
+hole_method='slices'
+min_branch_len=0.3
+
+
+
+
+#### IMPORTS ####
+# import sys
+# sys.path.insert(0, repo_path)
+# from src.image_processing import batch_PNN_seg_skel
+
+
+## TODO: remove after testing is done in proj/barc
 import skimage
 import pandas as pd
 import numpy as np
@@ -8,7 +42,8 @@ from pathlib import Path
 import time
 
 
-
+import warnings
+warnings.filterwarnings("ignore")
 
 
 # function to create skeleton objects from instance segmentation while maintaining the same labels as the instance segmentation
@@ -160,9 +195,8 @@ def batch_PNN_seg_skel(file_path: str,
         elif len(file_list) > 0:
             print(f"Found {len(file_list)} {file_type} files in {file_path}.")
         
-    out_dir = Path(out_path)
-    if not out_dir.exists():
-        out_dir.mkdir(parents=True, exist_ok=True)
+    if not Path.exists(Path(out_path)):
+        Path.mkdir(Path(out_path))
         print(f"Output file path not found. Creating: {out_path}")
 
     # keeping track of processing time
@@ -195,11 +229,9 @@ def batch_PNN_seg_skel(file_path: str,
             src_seg = skimage.filters.gaussian(src_seg, sigma=gaus_sigma)
         if med_size != 0:
             # TODO: make the median filter footprint adjustable based on the image (XY images won't work here)
-            # Ensure each footprint dimension is at least 1 voxel to avoid zero-sized footprints
-            z_dim = max(1, int(round(med_size * (voxel_size_ZYX[0] / float(np.max(voxel_size_ZYX))))))
-            y_dim = max(1, int(round(med_size * (voxel_size_ZYX[1] / float(np.max(voxel_size_ZYX))))))
-            x_dim = max(1, int(round(med_size * (voxel_size_ZYX[2] / float(np.max(voxel_size_ZYX))))))
-            fp = skimage.morphology.footprint_rectangle((z_dim, y_dim, x_dim))
+            fp = skimage.morphology.footprint_rectangle((round(med_size*(voxel_size_ZYX[0]/float(np.max(voxel_size_ZYX)))), 
+                                                        round(med_size*(voxel_size_ZYX[1]/float(np.max(voxel_size_ZYX)))), 
+                                                        round(med_size*(voxel_size_ZYX[2]/float(np.max(voxel_size_ZYX))))))
             src_seg = skimage.filters.median(src_seg, footprint=fp)
 
         # segment
@@ -256,7 +288,7 @@ def batch_PNN_seg_skel(file_path: str,
                 local_threshold = skimage.filters.threshold_local(src_seg_8bit, block_size=local_threshold_size, method='gaussian', param=local_gaussian_sigma)
             else:
                 raise ValueError(f"Unrecognized local threshold method: {local_threshold_method}")
-            src_seg = src_seg_8bit >= local_threshold*local_threshold_adjust
+            src_seg = src_seg_8bit > local_threshold*local_threshold_adjust
 
         # refine segmentation
         if obj_method == 'slices' or hole_method == 'slices':
@@ -329,3 +361,25 @@ def batch_PNN_seg_skel(file_path: str,
     # stop total time
     total_end=time.time()
     print(f"Processed {len(file_list)} images in {round(total_end - start, 2)/60} minutes.")
+
+
+
+#### BATCH PROCESS FUNCTION CALL ####
+batch_PNN_seg_skel(file_path=file_path,
+                    file_type=file_type,
+                    out_path=out_path,
+                    gaus_sigma=gaus_sigma,
+                    med_size=med_size,
+                    manual_threshold_cutoff=manual_threshold_cutoff,
+                    auto_threshold_method=auto_threshold_method,
+                    auto_threshold_adjust=auto_threshold_adjust,
+                    auto_multiotsu_middle_to=auto_multiotsu_middle_to,
+                    local_threshold_method=local_threshold_method,
+                    local_threshold_adjust=local_threshold_adjust,
+                    local_threshold_size=local_threshold_size,
+                    local_gaussian_sigma=local_gaussian_sigma,
+                    obj_min_diameter=obj_min_diameter,
+                    obj_method=obj_method,
+                    hole_min_diameter=hole_min_diameter,
+                    hole_method=hole_method,
+                    min_branch_len=min_branch_len)
