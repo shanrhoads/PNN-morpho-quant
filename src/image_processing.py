@@ -406,7 +406,7 @@ def batch_PNN_seg_skel_PARALLEL(file_path: str,
     elif Path(file_path).is_dir():
         raise NotADirectoryError("Input file path is a directory. Please specify a single file path for processing.")
     else:
-        raise FileExistsError(f"Input file path does not exist: {file_path}")
+        raise FileNotFoundError(f"Input file path does not exist: {file_path}")
 
     # confirm file paths and files exist
     # if not Path.exists(Path(file_path)):
