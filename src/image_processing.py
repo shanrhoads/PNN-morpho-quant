@@ -347,8 +347,8 @@ def batch_PNN_seg_skel_PARALLEL(file_path: str,
                         hole_method: str = '3D',
                         min_branch_len: Union[float, int] = 0):
     """
-    This function segments perineuronal nets (PNN) from 3D STED images and generates skeletons for each segmented object.
-    It processes all image files in the specified input directory and saves the segmentation/skeleton images to the specified output directory.
+    This function segments perineuronal nets (PNN) from a single 3D STED image and generates skeletons for each segmented object.
+    It processes one image file per call and saves the segmentation/skeleton images to the specified output directory. This function is intended for use in parallelized batch workflows.
     Parameters:
     -----------
     file_path: str
