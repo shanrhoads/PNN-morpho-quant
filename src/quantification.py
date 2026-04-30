@@ -283,15 +283,9 @@ def batch_PNN_quant_PARALLEL(file_out_prefix: str,
     #     if len(file_list) == 0:
     #         raise FileExistsError(f"Input file path does not have any {raw_file_type} files.")
     
-    # if not Path.exists(Path(quant_out_path)):
-    #     Path(quant_out_path).mkdir(parents=True, exist_ok=True)
-    #     print(f"Making {quant_out_path}")
-    # elif Path.exists(Path(quant_out_path)):
-    #     # check if output file already exists
-    #     if Path.exists(Path(f"{quant_out_path}/{file_out_prefix}-PNN_quantification.csv")):
-    #         raise FileExistsError("Quantification output file already exists. Please choose a different quant_out_path or dataset_name to avoid overwriting.")
-    out_csv = Path(quant_out_path) / f"{file_out_prefix}-PNN_quantification.csv"
-    # first_write = True
+    if not Path(quant_out_path).exists():
+        Path(quant_out_path).mkdir(parents=True, exist_ok=True)
+        print(f"Making {quant_out_path}")
 
     # keeping track of processing time
     # count=0
@@ -300,6 +294,7 @@ def batch_PNN_quant_PARALLEL(file_out_prefix: str,
     # loop through list of images and process
     # for f in file_list:
     f = Path(raw_file_path)
+    out_csv = Path(quant_out_path) / f"{file_out_prefix}-{f.stem}-PNN_quantification.csv"
 
     img_time_start=time.time()
     # count=count+1
@@ -428,13 +423,12 @@ def batch_PNN_quant_PARALLEL(file_out_prefix: str,
         combo.insert(i, label, path_parts[i])
     combo.insert(4, 'file_path', raw_file_path)
 
-    # write to csv
-    combo.to_csv(out_csv, index=False, mode='a') #'w' if first_write else 'a', header=first_write)
-    # first_write = False  # after first write, set to False so that header is not written again in next loop iteration
+    # write to csv - one file per image to avoid concurrent write conflicts in parallel jobs
+    combo.to_csv(out_csv, index=False)
     # del combo, quant_tabs, raw_image, raw_file, filez  # save memory before repeating loop
 
     print(f"Quantified {f.name}. Time taken: {(time.time() - img_time_start)/60} minutes.")
-    print("Output saved to:", f"{quant_out_path}/{file_out_prefix}-PNN_quantification.csv")
+    print("Output saved to:", str(out_csv))
 
     # print(f"Analysis finished!")
     # print(f"Quantified {len(file_list)} images in {(time.time() - start)/60} minutes.")

@@ -39,25 +39,13 @@ if [ ! -d "${quant_dir}" ]; then
   mkdir -p "${quant_dir}"
 fi
 
-csv_path="${quant_dir}/${file_prefix}-PNN_quantification.csv"
-
-# if the quantification CSV already exists, raise an error to avoid overwriting existing data
-if [ -f "${csv_path}" ]; then
-  echo "The ${csv_path} file already exists."
-  echo "Please choose a different quant_dir or file_prefix to avoid overwriting existing data."
-  exit 1
-fi
-
-# create empty .csv file for storing quantification results
-echo "Created empty .csv file for quantification results: ${csv_path}"
-touch "${csv_path}"
 
 # Loop through each .tif file and submit a batch job for processing
 for tif_path in "$@"; do
   file="$(basename "${tif_path}")"
   file="${file%${raw_file_type}}"
 
-  echo "Initiating segmentation for: ${file}"
+  echo "Initiating quantification for: ${file}"
   # echo "Input file: ${tif_path}"
   # echo "Segmentation and skeletonization directory: ${seg_skel_dir}"
   # echo "Output directory: ${quant_dir}"
