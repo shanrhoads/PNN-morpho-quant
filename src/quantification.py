@@ -89,7 +89,7 @@ def batch_PNN_quant(file_out_prefix: str,
     elif Path.exists(Path(quant_out_path)):
         # check if output file already exists
         if Path.exists(Path(f"{quant_out_path}/{file_out_prefix}-PNN_quantification.csv")):
-            raise FileExistsError("Quantification output file already exists. Please choose a different quant_out_path or dataset_name to avoid overwriting.")
+            raise FileExistsError("Quantification output file already exists. Please choose a different quant_out_path or file_out_prefix to avoid overwriting.")
     out_csv = Path(quant_out_path) / f"{file_out_prefix}-PNN_quantification.csv"
     first_write = True
 
