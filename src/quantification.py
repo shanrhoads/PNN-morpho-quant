@@ -215,7 +215,9 @@ def batch_PNN_quant(file_out_prefix: str,
         # combine regionprops and skel tables
         combo = pd.merge(quant_tabs[0], quant_tabs[1], on= ['image_name', 'scale', 'object', 'label'], how='outer')
 
-        path_parts = raw_file_path.rsplit("/")[-4:]
+        path_parts = list(Path(raw_file_path).parts[-4:])
+        if len(path_parts) < 4:
+            path_parts = [None] * (4 - len(path_parts)) + path_parts
         for i, label in enumerate(['experiment', 'sex', 'replicate', 'genotype']):
             combo.insert(i, label, path_parts[i])
         combo.insert(4, 'file_path', raw_file_path)
