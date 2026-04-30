@@ -118,7 +118,7 @@ def batch_PNN_quant(file_out_prefix: str,
 
         voxel_size_ZYX = (raw_file.physical_pixel_sizes.Z, raw_file.physical_pixel_sizes.Y, raw_file.physical_pixel_sizes.X)
         rounded_scale = tuple(round(x, 4) for x in voxel_size_ZYX)
-        print("Quantiative metrics will be scaled according to voxel size (ZYX):", rounded_scale)
+        print("Quantitative metrics will be scaled according to voxel size (ZYX):", rounded_scale)
 
         # empty list to collect quantification tables for each image
         quant_tabs = []
