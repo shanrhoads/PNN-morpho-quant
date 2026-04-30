@@ -248,8 +248,6 @@ def batch_PNN_quant_PARALLEL(file_out_prefix: str,
         A good example of a prefix is the date of quantification and a brief note about the parameters used (e.g., "20260309_test")
     raw_file_path: str
         path to the single raw image file to be processed in this function call; this function is intended to be run in parallel across multiple files using the batch_process_quant.sh script, which will call this function for each file to be processed
-    raw_file_type: str
-        file type of raw input images (e.g., ".tif")
     seg_skel_path: str
         location where segmentation/skeleton images are saved
     quant_out_path: str
