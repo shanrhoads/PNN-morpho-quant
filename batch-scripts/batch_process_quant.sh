@@ -1,8 +1,8 @@
 #!/bin/bash
 
 #### GENERAL INFO ####
-# Script to batch processing of image files using 'seg_skel_batch-parallel.py'
-# This loops through a folder of files, and for each file, submits a batch job to run the Python script in parallel on a cluster using 'sbatch'
+# Script to batch process image files using 'quant_batch-parallel.py'
+# This loops through a folder of files, and for each file, submits a batch job to run the quantification Python script in parallel on a cluster using 'sbatch'
 
 
 #### USER SPECIFIED INPUTS ####
