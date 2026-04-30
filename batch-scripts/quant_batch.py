@@ -21,7 +21,7 @@ include_surface_area =
 #### IMPORTS ####
 import sys
 sys.path.insert(0, repo_path)
-from src.image_processing import batch_PNN_quant
+from src.quantification import batch_PNN_quant
 
 
 
