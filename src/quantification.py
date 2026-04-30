@@ -103,10 +103,10 @@ def batch_PNN_quant(file_out_prefix: str,
         count=count+1
         if count==1:
             print("Quantifying first image:")
-        elif count>1:
-            print("Quantifying next image:")
         elif count==len(file_list):
             print("Quantifying last image:")
+        else:
+            print("Quantifying next image:")
         
         # collect paths to the related seg and skel files based on file name
         filez = {name: str(Path(seg_skel_path) / f"{f.stem}-{name}.tif") for name in ['PNN_instance_seg', 'PNN_skeleton']}
