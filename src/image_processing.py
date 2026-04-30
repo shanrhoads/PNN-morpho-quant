@@ -160,8 +160,9 @@ def batch_PNN_seg_skel(file_path: str,
         elif len(file_list) > 0:
             print(f"Found {len(file_list)} {file_type} files in {file_path}.")
         
-    if not Path.exists(Path(out_path)):
-        Path.mkdir(Path(out_path))
+    out_dir = Path(out_path)
+    if not out_dir.exists():
+        out_dir.mkdir(parents=True, exist_ok=True)
         print(f"Output file path not found. Creating: {out_path}")
 
     # keeping track of processing time
@@ -194,9 +195,11 @@ def batch_PNN_seg_skel(file_path: str,
             src_seg = skimage.filters.gaussian(src_seg, sigma=gaus_sigma)
         if med_size != 0:
             # TODO: make the median filter footprint adjustable based on the image (XY images won't work here)
-            fp = skimage.morphology.footprint_rectangle((round(med_size*(voxel_size_ZYX[0]/float(np.max(voxel_size_ZYX)))), 
-                                                        round(med_size*(voxel_size_ZYX[1]/float(np.max(voxel_size_ZYX)))), 
-                                                        round(med_size*(voxel_size_ZYX[2]/float(np.max(voxel_size_ZYX))))))
+            # Ensure each footprint dimension is at least 1 voxel to avoid zero-sized footprints
+            z_dim = max(1, int(round(med_size * (voxel_size_ZYX[0] / float(np.max(voxel_size_ZYX))))))
+            y_dim = max(1, int(round(med_size * (voxel_size_ZYX[1] / float(np.max(voxel_size_ZYX))))))
+            x_dim = max(1, int(round(med_size * (voxel_size_ZYX[2] / float(np.max(voxel_size_ZYX))))))
+            fp = skimage.morphology.footprint_rectangle((z_dim, y_dim, x_dim))
             src_seg = skimage.filters.median(src_seg, footprint=fp)
 
         # segment
@@ -253,7 +256,7 @@ def batch_PNN_seg_skel(file_path: str,
                 local_threshold = skimage.filters.threshold_local(src_seg_8bit, block_size=local_threshold_size, method='gaussian', param=local_gaussian_sigma)
             else:
                 raise ValueError(f"Unrecognized local threshold method: {local_threshold_method}")
-            src_seg = src_seg_8bit > local_threshold*local_threshold_adjust
+            src_seg = src_seg_8bit >= local_threshold*local_threshold_adjust
 
         # refine segmentation
         if obj_method == 'slices' or hole_method == 'slices':

@@ -24,11 +24,13 @@ def surface_area_from_props(labels, props, scale: Union[tuple,None]=None):
         volume = volume == lab
         if scale is None:
             scale=(1.0,) * labels.ndim
+        # Cast boolean mask to float and use standard isosurface level for binary data
+        volume = volume.astype(float)
         verts, faces, _normals, _values = skimage.measure.marching_cubes(
             volume,
             method="lewiner",
             spacing=scale,
-            level=0,
+            level=0.5,
         )
         surface_areas[index] = skimage.measure.mesh_surface_area(verts, faces)
 
@@ -70,6 +72,94 @@ def batch_PNN_quant(file_out_prefix: str,
 
     Analysis metrics include:
     -------------------------
+    The output CSV contains one row per quantified object, where object is either:
+      - "PNN fragment": individual connected component from instance segmentation
+      - "whole PNN": all segmented voxels collapsed into one object
+
+    Final table construction:
+      - Segmentation-derived metrics and skeleton-derived metrics are merged with an
+        outer join on ['image_name', 'scale', 'object', 'label'].
+      - Some fields may be NaN if one side of the merge is missing for a given row.
+
+    Metadata and grouping columns:
+      - experiment:
+          Parsed from raw_file_path (4th directory from the end).
+      - sex:
+          Parsed from raw_file_path (3rd directory from the end).
+      - replicate:
+          Parsed from raw_file_path (2nd directory from the end).
+      - genotype:
+          Parsed from raw_file_path (last directory).
+      - file_path:
+          Input raw_file_path used for this quantification run (folder-level provenance).
+      - image_name:
+          Name of the raw image file being quantified.
+      - scale:
+          Voxel spacing in (Z, Y, X), stored as a string tuple (rounded).
+      - object:
+          Object scope for the row: "PNN fragment" or "whole PNN".
+      - label:
+          Numeric object label ID used as merge key between segmentation and skeleton tables.
+
+    Segmentation geometry columns (regionprops_table):
+      - bbox-0, bbox-1, bbox-2:
+          Minimum bounding-box indices in Z, Y, X.
+      - bbox-3, bbox-4, bbox-5:
+          Maximum bounding-box indices in Z, Y, X (exclusive upper bounds).
+      - centroid-0, centroid-1, centroid-2:
+          Object centroid coordinates in Z, Y, X (scaled by voxel spacing).
+      - num_pixels:
+          Number of voxels assigned to the object label.
+      - volume:
+          Physical object volume (renamed from regionprops "area").
+      - equivalent_diameter:
+          Diameter of a sphere with equivalent object volume.
+      - major_axis_length:
+          Longest principal-axis length of the fitted object shape.
+      - minor_axis_length:
+          Shortest principal-axis length of the fitted object shape.
+      - extent:
+          Fraction of the bounding-box volume occupied by object voxels.
+      - solidity:
+          Ratio of object volume to convex-hull volume.
+      - euler_number:
+          Topological descriptor of components/holes/tunnels in the labeled object.
+
+    Intensity columns:
+      - min_intensity:
+          Minimum raw-image intensity in object voxels.
+      - max_intensity:
+          Maximum raw-image intensity in object voxels.
+      - mean_intensity:
+          Mean raw-image intensity in object voxels.
+      - intensity_std:
+          Standard deviation of raw-image intensity in object voxels.
+      - intensity_sum:
+          Integrated object intensity, computed as mean_intensity * num_pixels.
+
+    Optional surface area columns (only when include_surface_area=True):
+      - surface_area:
+          Surface area estimated from marching-cubes mesh using voxel spacing.
+      - SA_to_volume_ratio:
+          Surface area to volume ratio (surface_area / volume).
+
+    Skeleton summary columns:
+      - branch_count:
+          Number of skeleton branches assigned to the object.
+      - branch_type_mean, branch_type_median, branch_type_min, branch_type_max, branch_type_std:
+          Summary statistics of skeleton branch-type codes.
+      - branch_distance_sum, branch_distance_mean, branch_distance_median,
+        branch_distance_min, branch_distance_max, branch_distance_std:
+          Summary statistics of geodesic branch path lengths.
+      - euclidean_distance_sum, euclidean_distance_mean, euclidean_distance_median,
+        euclidean_distance_min, euclidean_distance_max, euclidean_distance_std:
+          Summary statistics of straight-line endpoint-to-endpoint branch distances.
+
+    Branch type code reference (skan):
+      - 0: endpoint-to-endpoint branch
+      - 1: junction-to-endpoint branch
+      - 2: junction-to-junction branch
+      - 3: cycle/loop branch
 
     """
     # confirm file paths and files exist
@@ -129,6 +219,7 @@ def batch_PNN_quant(file_out_prefix: str,
                 raise FileExistsError(f"Expected file not found: {path}")
             
             seg = skimage.io.imread(path)
+            print("imported segmentation successfully")
             
             # for segmentation files
             if name == 'PNN_instance_seg':
@@ -146,6 +237,7 @@ def batch_PNN_quant(file_out_prefix: str,
                                                                 intensity_image=raw_image,
                                                                 properties=properties,
                                                                 spacing=voxel_size_ZYX)
+                    print("finished regionprops")
 
                     props_obj_tab = pd.DataFrame(props_obj)
                     props_obj_tab.insert(0, 'object', obj_type)
@@ -154,6 +246,7 @@ def batch_PNN_quant(file_out_prefix: str,
                         surface_area_values = surface_area_from_props(obj_seg, props_obj, voxel_size_ZYX)
                         props_obj_tab.insert(13, 'surface_area', surface_area_values)
                     obj_quant_tabs.append(props_obj_tab)
+                    print(f"finished seg: {obj_type}")
                 
                 # combine both tables and format
                 combined_obj_quant = pd.concat(obj_quant_tabs, ignore_index=True)
@@ -205,6 +298,7 @@ def batch_PNN_quant(file_out_prefix: str,
                                                 'branch_id_count':'branch_count'}, inplace=True)
                     
                     skel_quant_tabs.append(skel_summary)
+                    print(f"finished skel: {skel_type}")
 
                 # combine both skel tables
                 combined_skel_quant = pd.concat(skel_quant_tabs, axis=0)
