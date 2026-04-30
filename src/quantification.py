@@ -1,5 +1,5 @@
 import skimage
-from typing import Union
+from typing import Union, List
 from pathlib import Path
 import numpy as np
 import time
@@ -285,9 +285,9 @@ def batch_PNN_quant_PARALLEL(file_out_prefix: str,
     #     if len(file_list) == 0:
     #         raise FileExistsError(f"Input file path does not have any {raw_file_type} files.")
     
-    if not Path(quant_out_path).exists():
-        Path(quant_out_path).mkdir(parents=True, exist_ok=True)
-        print(f"Making {quant_out_path}")
+    # if not Path(quant_out_path).exists():
+    #     Path(quant_out_path).mkdir(parents=True, exist_ok=True)
+    #     print(f"Making {quant_out_path}")
 
     # keeping track of processing time
     # count=0
@@ -296,7 +296,6 @@ def batch_PNN_quant_PARALLEL(file_out_prefix: str,
     # loop through list of images and process
     # for f in file_list:
     f = Path(raw_file_path)
-    out_csv = Path(quant_out_path) / f"{file_out_prefix}-{f.stem}-PNN_quantification.csv"
 
     img_time_start=time.time()
     # count=count+1
@@ -317,7 +316,7 @@ def batch_PNN_quant_PARALLEL(file_out_prefix: str,
 
     voxel_size_ZYX = (raw_file.physical_pixel_sizes.Z, raw_file.physical_pixel_sizes.Y, raw_file.physical_pixel_sizes.X)
     rounded_scale = tuple(round(x, 4) for x in voxel_size_ZYX)
-    print("Quantiative metrics will be scaled according to voxel size (ZYX):", rounded_scale)
+    print("Quantitative metrics will be scaled according to voxel size (ZYX):", rounded_scale)
 
     # empty list to collect quantification tables for each image
     quant_tabs = []
@@ -425,8 +424,8 @@ def batch_PNN_quant_PARALLEL(file_out_prefix: str,
         combo.insert(i, label, path_parts[i])
     combo.insert(4, 'file_path', raw_file_path)
 
-    # write to csv - one file per image to avoid concurrent write conflicts in parallel jobs
-    combo.to_csv(out_csv, index=False)
+    out_csv = Path(quant_out_path) / f"{file_out_prefix}-{f.name}-PNN_quantification.csv"
+    combo.to_csv(out_csv, index=False, mode='w', header=True)
     # del combo, quant_tabs, raw_image, raw_file, filez  # save memory before repeating loop
 
     print(f"Quantified {f.name}. Time taken: {(time.time() - img_time_start)/60} minutes.")
@@ -446,7 +445,7 @@ def batch_summarize_quant(out_file_prefix: str,
         this allows for multiple unique rounds of summarization to be done and saved to the same location, if necessary.
         A good example of a prefix is the date of summarization and a brief note about the parameters used (e.g., "20260312_test")
     csv_path_list: List[str],
-        A list of path for the .csv files to analyze. These should be the output quantification tables from the batch_PNN_quant function, 
+        A list of path to folders containing the .csv files to analyze. These should be the output quantification tables from the batch_PNN_quant function, 
         and should all have the same column structure.
     out_path: str,
         A path string where the summary data file will be output to
@@ -460,8 +459,16 @@ def batch_summarize_quant(out_file_prefix: str,
     # Read in the csv files and combine
     ###################
     quant_tabs = []
+
+    # for each path specified, read in all the csv files that end in "-PNN_quantification.csv" and combine into one table for that path, then combine tables across paths
     for loc in csv_path_list:
-        quant_tabs.append(pd.read_csv(Path(loc)))
+        csv_files = list(Path(loc).glob("*-PNN_quantification.csv"))
+        print(csv_files)
+        if not csv_files:
+            raise FileExistsError(f"No quantification .csv files found in specified path: {loc}")
+        else:
+            for csv_file in csv_files:
+                quant_tabs.append(pd.read_csv(csv_file))
 
     # assess if all tables have surface area included or not, and if they are consistent with each other
     sa_included = [("surface_area" in tab.columns and "SA_to_volume_ratio" in tab.columns) for tab in quant_tabs]
@@ -478,7 +485,7 @@ def batch_summarize_quant(out_file_prefix: str,
     ###################
     # summary stat group
     ###################
-    group_by = ["experiment", "replicate", "genotype", "image_name", "object"]
+    group_by = ["experiment", "sex", "replicate", "genotype", "image_name", "object"]
     sharedcolumns = [
         "num_pixels", "equivalent_diameter", "major_axis_length", "minor_axis_length", "extent", "solidity", "euler_number",
         "min_intensity", "max_intensity", "mean_intensity", "intensity_std", "intensity_sum",
