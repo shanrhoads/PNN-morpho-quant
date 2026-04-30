@@ -417,7 +417,13 @@ def batch_PNN_quant_PARALLEL(file_out_prefix: str,
     # combine regionprops and skel tables
     combo = pd.merge(quant_tabs[0], quant_tabs[1], on= ['image_name', 'scale', 'object', 'label'], how='outer')
 
-    path_parts = raw_file_path.rsplit("/")[-4:]
+    parent_parts = Path(raw_file_path).parent.parts
+    if len(parent_parts) < 4:
+        raise ValueError(
+            f"Expected at least 4 parent directories in raw_file_path to derive "
+            f"experiment/sex/replicate/genotype metadata, got: {raw_file_path}"
+        )
+    path_parts = parent_parts[-4:]
     for i, label in enumerate(['experiment', 'sex', 'replicate', 'genotype']):
         combo.insert(i, label, path_parts[i])
     combo.insert(4, 'file_path', raw_file_path)
